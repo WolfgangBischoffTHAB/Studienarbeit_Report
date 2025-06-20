@@ -1,1 +1,116 @@
 20 Seiten
+
+# Titel
+
+Implementierung eines RISC-V CPU und Bestandteilen einer Toolchain
+
+# Zielsetzung
+
+Das Ziel dieser Studienarbeit ist es einen Weg und die Mittel aufzuzeigen, mit denen ein Anfänger die Erstellung es einfachen RISC-V CPU bewerkstelligen kann. Das Testen des CPU durch selbstentwickelte Software und das Debuggen der Software auf dem CPU ist ebenfalls Teil der gesetzten Aufgabe.
+
+# Herausforderungen
+
+Die Implementierung eines RISC-V CPU stellt einen Student vor mehrere Herausforderungen.
+
+1. Auswahl der Hardware - Ein FPGA Entwicklungsboard kann zwar von der Bildungseinrichtung beigestellt werden und die Auswahl ist damit vorgegeben. Es kann trotzdem sinnvoll sein sich nochmals über die Wahl des Entwicklungsboards gedanken zu machen, da die Auswahl des Entwicklungsboards Einfluss auf die zu verwendende FPGA-Entwicklungstools hat. Die Verwendung bestimmter FPGA-Entwicklungstools haben selbst wiederum Konsequenzen und will daher gut ausgewählt werden. Ein weiterer Punkt ist der Preis und die Verfügbarkeit der FPGA Boards. Es gibt bereits Boards zu niedrigen Kosten, die sich für das Erlernen der FPGA-Entwicklung eignen.
+
+2. Auswahl der FPGA-Entwicklungstools - Die FPGA Entwicklungstools können vom Hersteller des FPGA gestellt werden. Diese Herstellertools sind im Falle von Vivado (Vom Hersteller AMD für Artix, Kintex, Virtex, Spartan und Zynq 7000 series und auch UltraScale and UltraScale+ Familien) und Quartus Prime (Intel für Cyclone und MAX chips) sehr umfangreich. Vorteile von Intel und AMD sind die Bereitstellung von IP-Bibliotheken und Generatoren. Nachteile sind die schiere Größe dieser Tools (mehrer 100 GB an Festplatten für die Installation). Ein mittleres Angebot wird von kleineren Herstellern wie der Firma Lattice und der Firma GOWIN gemacht. Ihre FPGAs sind teilweiße durch OpenSource Toolchains abgedeckt aber die Herstellereignenen FPGA-Entwicklungstools sind auch eine gute Option und bieten oft einen guten Funktionsumfang bei kleinerem Resourcenverbrauch. Des weiteren geht die Bandbreite bis hin zu OpenSource Tools (Yosys, NextPNR). Die Toolchains werden in einem späteren Abschnitt miteinander verglichen und eine Auswahl wird getroffen.
+
+3. Erlernen der HDLs Verilog, System Verilog oder VHDL. Ausführen von Simulationen und übertragen der Designs auf den FPGA und dortigem Test. Es kann sein, dass Designs trotz funktionierende Simulation nicht auf dem FPGA funktionieren. Die Fehlersuche ist dann sehr schwer, da es keine "Debugger" für FPGAs und deren internen Abläufe gibt. Von Vorteil ist es, wenn die Dauer eines Zyklus von der Änderung des Designs über die Synthese bis zum Upload kurz sind. Verständnis vom Design für Signales (wires) und getackteter, Zustandsbehafteter Logik (register mit clock Flanken).
+
+Auch nachdem die Aufgabe des Designs eines CPU gemeistert ist, gibt es weitere Herausforderungen.
+
+4. Auswahl eines Assemblers - Es gibt wenige Assembler, die RISC-V code in Maschinenbefehle übersetzen und dabei möglichst wenige Annahmen treffen.
+Das Problem liegt in einer Diskrepanz zwischen der RISC-V Spezifikation und Lehrbüchern zu RISC-V und den Compilern und Assemblern, die tatsächlich zur Erstellung von Software gentzt werden. Die RISC-V Spezifikation und Lehrbücher sprechen über RISC-V Instruktionen und deren Kodierung in Maschinenbefehle. Wirkliche Compiler haben die Aufgabe Maschinencode auszugeben, der konkrete Speicherbereiche belegt und die Kombination von unterschiedlichen Objektfiles in ein kombiniertes Programm ermöglicht. Für einen Anfänger kann diese Diskrepanz zu einer zusätzlichen Herausforderung werden, für die er nicht die notwendige Zeit oder Motivation hat. Ein echter Compiler benötigt beispielsweiße noch ein Linkerscript bevor er arbeitet. Wenn man eine RISC-V CPU entwirft, möchte man eventuel lediglich simple Testprogramme von Addresse 0x00 ausführen und legt keinen Wert auf Adressbereiche. es soll ein Assembler für 32-bit RISC-V bereitgestellt werden, mit dem schnell, unkompliziert und ohne Annahmen RISC-V Assemblercode in Maschinenbefehle für den Upload in den CPU übersetzt werden kann.
+
+5. Interaktion mit dem CPU - Wenn das Design über den Bitstream auf den FPGA bereitgestellt worden ist, wird der CPU ein Programm ausführen. Die Frage ist, wie man jetzt mit dem CPU interagiert. Das Ziel ist es nicht Peripherie wie Druckknöpfe, LEDs oder LCDs an den CPU anschließen, sondern mit dem CPU selbst zu kommunizieren. Nach Möglichkeit soll der CPU gestoppt und gestartet werden können. Der Zugriff auf Register soll möglich sein und der Zugriff auf den Speicher soll möglich sein. Dazu gibt es die Debug-Spezifikation für RISC-V (TODO: Referenz auf eine bestimmte Version der Debug-Spek hier einfügen! file:///C:/Users/lapto/dev/fpga/gowin_tang_nano/riscv_debug/doc/riscv-debug-release.pdf). Die Debug-Spezifikation beschreibt Komponenten um mit den Harts eines RISC-V CPU zu interagieren. Die Kommunikation kann über das JTAG-Protokoll ausgeführt werden. In diesem Bericht wird ein Teil der RISC-V Debug Spezifikation implementiert, gerade genug um die oben geforderten Punkte über eine JTAG DebugProbe auszuführen.
+
+# 0. Einleitung zu RISC-V
+
+RISC-V ist eine Instruction Set Architecture (ISA). Ein Instructionset Architecture ist eine Menge an Anweisungen, Registern und Datentypen. Damit beschreibt RISC-V keine konkrete CPU Architektur sondern gibt Befehle und Register vor, die auf einer konkreten Architektur ausführbar und vorhanden sein müssen, damit dieses System RISC-V konform ist. Laut der RISC-V homepage (Quelle: https://riscv.org > about > faq > Who uses an ISA?) ist eine ISA auch im Zuge der Leere einsetzbar damit Stunden die Wirkungsweiße eines Computers verstehen lernen. RISC-V wurde daher auch vor dem Hintergrund der Leere erstellt.
+
+Damit steht RISC-V in Konkurrenz mit dem x86 Instructionset (Chips von Intel, AMD und weiteren), dem ARM Instructionset (Chips von STM32, Renesas, NXP, Qualcomm und andere) und allen anderen definierten Instructionsets (AVR, Itanium (IA-64), MIPS, Z-80 und viele weitere). Die Besonderheit von RISC-V ist das Lizenzmodel. Das Lizenzmodel besteht aus der Erlaubnis zur freien Benutzung und damit der Abwesenheit jeglicher Lizenzkosten (Quelle: https://riscv.org/about/faq/#:~:text=There%20is%20no%20fee%20to%20use%20the%20RISC%2DV%20ISA. In google eingeben: https://riscv.org > about > faq > What is the license model ).
+
+RISC-V ist an der Universität UC Berkeley entwickelt worden. Dabei ist RISC-V aus dem Wissenschatz erstellt worden, den die Beteiligten im Zuge der vier Vorgängeprojekte (RISC-I bis RISC-4) sammeln konnten und heißt damit sinnigerweiße RISC-V (Quelle: https://riscv.org > about > faq > Why is it called RISC-V).
+
+RISC-V hat in den letzten Jahren weitere Fortschritte gemacht. Das Tripple-A Spiel "The Witcher 3" lässt sich mit Einschränkungen auf einem RISC-V System (https://milkv.io/pioneer) ausführen. RISC-V Mainline Support wurde Linux im Jahre 2022 hinzugefügt. Die 64 Bit Variante von RISC-V hielt im Jahre 2023 Einzug in den Linux-Kernel (Quelle: https://en.wikipedia.org/wiki/RISC-V)
+
+Die RISC-V ISA ist keine monoithische Spezifikation. Das angewandte Prinzip ist, dass ein Kern von Funktionen für eine gewisse Bit-Breite (XLEN) vorhanden sein muss, der dann durch Extensions erweitert werden kann. Beispiele für Kerne sind RV32I, RV64I und RV128I die Integer-Operationen mit jeweilgen Registerbreiten von 32, 64 und 128 Bit unterstützen. Extensions fügen dem System Floating-Point Unterstützung, Komprimierte Anweisungen, Vector-Mathematik, Kryptografie, Atomic-Operationen und viele weitere Funktionen hinzu.
+
+In dieser Studienarbeit wird ein Teil des Kerns RV32I umgesetzt. Dieser Umfang kann durch weitere Entwicklungstätigkeit immer weiter bis zum vollem Umfang von RV32I ergänzt werden wenn notwendig. Als Extensions wird die Debug-Spezifikation hinzugefügt.
+
+# 1. Auswahl der Hardware
+
+- Lattice IceStick
+- GOWIN TangNano 9k
+- Digilent  ARTY S7
+- DE 112 
+
+# 2. Auswahl der FPGA-Entwicklungstools
+
+Kriterien zur Bewertung von FPGA Entwicklungstools
+
+- Installationsplattenplatz (100-te GB sind schlecht!)
+- Unterstützung von Simulationstools und Traceviewer on board
+- Geschwindigkeit der Synthese
+- Fehlererkennung der Synthese (logische Loops werden von Yosys nicht erkannt! Vom professionellen Tool schon)
+- Editorqualität (go to definition, highlight von gehovertem Symbol, ...)
+
+# 3. Erlernen der HDL Verilog
+
+TODO
+
+# 4. Erstellen des Assemblers
+
+TODO
+
+# 5. Architektur des Pipelined RISC-V CPU
+
+TODO
+
+# 6. RISC-V Debug Spezifikation und JTAG-DebugProbe on Arduino
+
+Quellen: 
+[100] https://five-embeddev.com/riscv-debug-spec/v0.13-release/core_debug.html
+[101] https://riscv.org/wp-content/uploads/2024/12/riscv-debug-release.pdf
+
+Die Interaktion mit einem Computer erfolgt über Ein- und Ausgabeperipherie. Dabei sind auf den Entwicklungsboards üblicherweiße Slider, Knöpfe, LEDs, Displays oder 7-Segment-Anzeigen vorhanden. Möchte man direkt über den Zustand des CPU oder der an den Systembus angeschlossen Module wie Speicher oder UARTs informiert werden, sind die Perihperie und simple Tests meist nicht detailiert genug.
+
+Einen direkten Zugriff auf die Register und den Speicher erhält man über einen Debugger. Ein Debugger kann nur funktionieren, wenn die Zielhardware Funktionen bereitstellt, die der Debugger nutzen kann. Der Debugger muss über eine Infrastruktur mit dem CPU verbunden werden.
+
+Der RISC-V Debug Support ist keine eigene Extension. Die Spezifikation für den Debug Support heißt "RISC-V External Debug Support" [101] und definiert alle Funktionen und wird im Folgenden Debug-Spezifikation genannt.
+
+Um die Debug-Spezifikation zu verstehen ist es wichtig unterschiedliche Ebenen voneinander zu trennen, da ansonsten schnell Verwirrung entsteht. Die Ebenen, die zu trennen sind, sind die konkrete Implementierung der Infrastruktur (hier JTAG und Wishbone) und die Module die Spezifisch für RISC-V definiert worden sind (DTM, DMI, DM und Harts).
+
+TODO: Hier Bild von Seite 6 der Debug_Spec darstellen.
+
+Um den RISC-V Anteil zu beschreiben, beginnen wir auf dem Endbenutzergerät (PC oder Laptop), auf dem die Debugger-Software läuft. Im Zuge dieser Studienarbeit werden Python-Skripte erstellt, die die Aufgabe eines Debuggers übernehmen. Die Debugger-Software spricht mit einer Debug-Probe, welche die Signale auf das Entwickler-Board überträgt, auf dem das RISC-V System läuft. Die Debug-Spezifikation bezeichnet das RISC-V System als RISC-V Platform. Die RISC-V Debug Spezifikation gibt nicht vor, welche Technologie zur Übertragung der Signale verwendet werden muss. Dazu später mehr.
+
+Innerhalb der RISC-V Platform wird die Verbindung zunächst am Debug Transport Module (DTM) terminiert. Es kann in einer RISC-V Platform mehrere DTM Implementierungen geben. Beispielsweiße könnte ein DTM über USB sprechen, eine andere Implementierung eines DTM über JTAG. An dieser Stelle bleibt die konkrete Implementierung noch abstrakt und spielt erstmal keine Rolle für die weitere Beschreibung der Debug-Spezifikation.
+
+Der DTM verwendet das Debug-Module-Interface (DMI) um mit einem oder mehreren Debug-Modulen zu sprechen. Das Debug-Module-Interface sieht Register und Befehle im DTM vor, die eine Kommunikation mit dem DM auslösen. Diese Befehle sind definiert. Der Debugger muss diese Befehle schicken um bestimmte Aktionen innerhalb der RISC-V CPU auszulösen.
+
+Die RISC-V CPU besteht aus mindestens einem Hart. Ein Hart besitzt Hardware um Instruktionen auszuführen (Eine Pipeline samt Registern und eine oder mehrere ALU). Fortschrittliche RISC-V CPUs können viel Harts enthalten um echtes Multithreading zu ermöglichen. Ein Debug-Module (DM) ist für einen oder mehrere Harts zuständig. Eine RISC-V Platform kann eine oder mehrer DM enthalten.
+
+Der DTM muss im ersten Schritt die Anzahl der DMs ermitteln und dann DMs auswählen. Die momenten ausgewählten DMs erhalten dann Befehle vom DTM, die sie dann auf ihren Harts ausführen sollen. Mit diesen Befehlen kann ein DTM kann die DMs anweißen ihre Harts zu pausieren, zu reseten und weiterlaufen zu lassen. Es ist auch möglich die Register der Harts zu lesen zu schreiben und über den Systembus mit dem Speicher (RAM für Instruktionen und Daten) zu interagieren und den Speicherinhalt zu lesen und zu schreiben.
+
+Die RISC-V Platform, die im Zuge dieser Arbeit erstellt wird, besitzt einen einzigen Hart um die Komplexität für Anfänger handhabbar zu gestalten. Aus dem gleichen Grund wird nicht jeder Teil der Debug-Spezifikation implementiert. Das Zählen und das Auswählen der DMs wird nicht implementiert. Es wird implizit von einem einzigen Hart ausgegangen der automatisch immer ausgewählt und damit immer das Ziel aller Befehle ist.
+
+Die noch zu beschreibenden Teile sind die konkrete Implementierung zur Übertragung der Daten zwischen der Debug-Probe und dem DTM innerhalb der RISC-V Platform. Wie oben beschrieben, muss die Debugger-Software DMI-Befehle im DTM auslösen. Dazu muss sie diese DMI-Befehle übertragen. Innerhalb dieser Studienarbeit wird dazu JTAG verwendet.
+
+JTAG ist ein Protokoll das zum Testen von Hardware eingesetzt wird. Es erlaubt neben dem Ausführen von Hardwaretestabläufen auch das Schreiben in Register und in den Speicher und wird daher auch häufig eingesetzt um Mikrokontroller-Firmware zu flashen. Innerhalb der JTAG-Beschreibung gibt es den TAP. Der TAP befindet sich im Zielsystem und terminiert dort die JTAG Verbindung. Da diese Aufgabe beinahe Deckungsgleich mit dem DTM aus der RISC-V Debug Spezifikation ist, wird ein JTAG TAP als RISC-V DTM ausgeführt oder alternativ wird ein TAP direkt mit dem DTM verbunden. 
+
+JTAG ist in der Lage Register zu beschreiben. Die Interaktion zwischen dem JTAG Protokoll und dem RISC-V DTM besteht also darin, dass der JTAG-TAP in die Register des DTM schreibt. Die RISC-V Debug Spezifikation ist so ausgeführt, dass das Beschreiben eins Registers Aktionen direkt startet. Damit ist JTAG ein perfektes Protokol um die RISC-V Debug Spezifikation auszuführen.
+
+Die RISC-V Platform ist jetzt also in der Lage DMI Befehle zu starten. Das Debug-Module-Interface (DMI) ist das Protokoll zwischen einem DTM und mehrern DMs. Die Frage ist, wie wird diese Datenübertragung in Hardware Implementiert? Die RISC-V Debug Spezifikation überlässt diese Detail der Implementierung und macht absolut keine Vorgaben. In der Debug-Spezifikation wird nirgends definiert, wie eine DMI Transaktion gestartet oder gestoppt wird. Der verwendet Wortlaut ist absichtlich abstrakt und es wird von Lesen und Schreiben gesprochen. Im Zuge dieser Studienarbeit wird die Interkation über den Wishbone Bus implementiert. Der Wishbone Bus ist gut dokumentiert (TODO: B4 Spec hier verlinken) und ohne Lizenzgebühren einsetzbar. Der Wishbone Bus ist von der Komplexität her minimal im Vergleich zu anderen Bussystemen (AMBA-Bus, AXI-Bus, ...).
+
+Für einen einfachen Debugger sollen folgende Funktionen implementiert werden:
+- Hart stoppen, reseten und starten und im Single Step modus ausführen sowie die normale Ausführung wieder anfnehmen.
+- Register lesen schreiben
+- Speicher lesen schreiben
+
+Mit diesen Funktionen kann Maschinen code auf den RISC-V CPU geladen werden und das Programm kann im Single-Step Betrieb ausgeführt werden.
+
+Die JTAG-Debug Probe wird für erste Tests über einen Arduino DUE (3.3 Volt-System) und über Bit-Banging implementert. Python Skripte werden auf dem PC ausgeführt und sprechen mit dem Arduino über ein simples Datenaustauschprotokoll. Der Debugger besteht aus einzelnen Pyhton Skripten.
+
+Um den Hart zu stoppen, hat der DM Kontroller über die Hardware Clock-Source, die den Hart mit einem Taktsignal verorgt. Wenn die Clock-Leitung unterbrochen wird, dann ist der Hart gestoppt. Zum Single-Step Betrieb generiert der DM ein eigenes Clock-Signal und führt dem Hart dieses Clock-Signal zu. Wenn der Hart fortgesetzt wird, dann wird die Hardware Clock-Source wieder zugeführt.
