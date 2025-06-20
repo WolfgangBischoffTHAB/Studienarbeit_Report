@@ -62,7 +62,84 @@ TODO
 
 # 4. Erstellen des Assemblers
 
-TODO
+Um die korrekte Funktionsweiße des RISC-V CPU zu testen, muss ein Programm im Instruction-Memory des CPU abgelegt werden, damit der CPU diese Anweisungen ausführt. Die Daten, die im Hauptspeicher erwartet werden sind die Anweisung der Maschinensprache. Die Umwandlung von Assembler-Anweisungen in Maschinen Sprache wird Kodierung genannt. Ein Assembler hat die Aufgabe RISC-V Assembly Anweisungen zu Kodieren. Die RISC-V ISA definiert exakt, wie die Kodierung ablaufen muss. 
+
+Die Instruktionen des RV32I Kerns sind in sechs Gruppern (RISBUJ). Einige Instruktionen verwenden Register (Register, R) andere enthalten Parameter aus Daten, die direkt in die Instruction einkodiert werden (Immediate, I). Andere Instruktionen sind für Verzweigungen auf Basis einer Bedingung (Branches, B) und Sprünge ohne Bedingung (Jumps, J) zuständig. Instruktionen die in den Speicher schreiben gehören der Store (S) Gruppe an. Die U Instruktionen werden verwendet um 32 bit Werte in Register zuladen, was sich mit einem 32 bit weiten Anweisungsformat gar nicht beschreiben lässt. U Instruktionen erlauben daher nur Immediate Wert aus 20 bit und füllen die fehlenden 12 bit implizit mit 0 auf.
+
+Es wird ein Assembler in der Programmersprache Java erstellt. Dafür gibt es mehere Gründe. Java lässt sich (nach der Installation eines JRE oder JDK) auf jedem Bebtriebssystem ausführen. Die Assembler und Compiler aus der GNU toolchain sind nicht ohne weiteres auf Windows ausführbar. Ein weiters Argument ist, dass es ein Simples Tool ohne viele Parameter geben soll um Test-Programm schnell und einfach zu übersetzten. Echte Assembler sind komplizierter zu bedienen und verwenden immer auch ein spezifische Memory Layout für einen Target und fügen extra Instruktionen für den Target hinzu. Diese zusätzlichen Instruktionen werden von dem eigenen simplen CPU wahrscheinlich gar nicht unterstützt und das kodierte Programm kann dann nicht verwendet werden. Hier soll es lediglich um ein Assembler für einen sehr simplen RISC-V CPU gehen. Der Assembler kodierte die Anweisungen, bis auf leichte Optimierungen, so wie sie eingegeben worden sind. Es gibt einen Online Assembler unter https://riscvasm.lucasteske.dev/. Der Nachteil dieses Assembler ist es, dass er 64 bit RISCV Instruktionen für RV64I ausgibt ohne dass dies irgendwo auf der Seite erwähnt wird. Wenn man einen RISC-V CPU mit eine RV32I Kern erstellt, dann kann dieser Online-Assembler nur eingeschränkt verwendet werden.
+
+An den Assembler ist eine Emulator angeschlossen, der das kodierte Programm direkt ausführen kann. Damit kann wird die Gültigkeit des Programms erst lokal verifiziert um zu verhindern, dass das Programm auf den CPU geladen wird obwohl es an sich fehlerhaft ist. Wenn man ein fehlerhaftes Programm auf dem CPU ausführt, dann kann man in der Entwicklungsphase nicht unterscheiden ob das fehlerhafte Verhalten von dem CPU oder von dem Programm stammt und es werden eventuell Fehler an Stellen gesucht, an denen es gar keine Fehler gibt. Dabei kann viel Zeit verloren werden wodurch diese Situation vermieden werden muss.
+
+Der Assembler liest Dateien mit RISC-V Assembler Anweisungen ein:
+
+```
+__main:
+loop_start:
+    addi x5, x0, 0x0
+    addi x6, x0, 0x0
+    lui x7, 0
+    addi x7, x7, 2
+
+busy_loop_start:	
+    beq x5, x7, 0xC             # if (x5 == x7) jump to loop_end (pc relative jump of +12 bytes)
+    addi x5, x5, 1
+    jal x0, busy_loop_start     # jal loop head (pc relative jump back -8 bytes)
+
+busy_loop_end:
+    lw x6, 52(x0)
+    xori x6, x6, 1
+    sw x6, 52(x0)
+
+    jal x0, loop_start
+```
+
+Der Assembler benötigt das Label __main um den Haupteinsprungpunkt zu finden, damit er diese Adresse an den Emulator geben kann und der Emulator die Ausführung dort im Speicher beginnt. Für den RISC-V CPU auf dem FPGA sollte __main immer so gelegt werden, dass seine Adresse mit 0x00 zusammenfällt, also ganz am Anfang des Listing.
+
+Die Assembler Instruktionen werden dann durch einen Parser basierend auf einer Grammatik für RISC-V Assembly geparst. Der Weg über das Parsing wurde gewählt, da RISC-V Assembly ganze Anweisungsbäume erlaubt. Ein Beispiel ist die Anweisung "jal   ra, pc - 176;" Diese Anweisungsbäume sind nur schwer durch einen manuel entwickelten Quellcode zu verarbeiten, der dann letztendlich über lange Zeit fehlerbehaftet sein wird. Auf lange Sicht macht der Einsatz einer Grammatik Sinn und spart Zeit.
+
+Das Ergebnis des Parsing ist ein Parse-Tree. Ein Visitor wird über den Parse-Tree geführt. Der Visitor (RISCASMExtractingOutputListener) befüllt einzelne Instanzen der Klasse AsmLine mit den Werten, die er aus den RISC-V Assembler Zeilen ziehen kann. An dieser Stelle liegt jetzt die RISC-V Assembly Datei in Form einer Liste von AsmLine Objekten vor.
+
+Der nächste Schritt ist das Anwenden einer ersten einfachen Optimierung. Wenn sich im Quellcode lui und addi Anweisungen befinden, kann ein Paar dieser Anweisungen durch eine LI (Load Immediate) Pseudo Instruktion ersetzt werden. Dies erscheint zunächst kontraproduktiv, da ein Assembler eher Pseudoinstruktionen auflösen als erstellen soll. Es ergibt nur dann Sinn, wenn man weiß, das zu einem späteren Zeitpunkt wieder Pseudoinstruktionen aufgelöst werden. Während der Auflösung hat der Assembler die Freiheit die LI Instruktion zu optimieren und es wird eventuel anstelle des lui, addi Paares nur ein lui ausgegeben. Durch dieses Verhalten korrigiert der Assembler eventuel unnötig eingefügt Instruktionen durch den Programmierer. Diese Optimierung wurde übernommen, da andere Assembler das gleicher Verhalten haben und sich die Ergebnisse des eigenen Assemblers nur mit anderen Assemblern gegenprüfen lassen, wenn man diese Optimierung auch anwendet.
+
+TODO: Füge eventuell Beispiel einer optimierung ein:
+
+Im Folgenden erstellt der Assembler eine Tabelle von .equ Konstanten mit deren Werten, damit er Konstanten in Parametern, Expressions und Labeln durch numerische Werte ersetzen kann.
+
+TODO Füge eventuel .equ Beispiel ein, das die Ersetzung zeigt.
+
+Nach dem ersetzen der Konstanten werden Pseudo-Anweisungen aufgelöst. Beispielsweiße wird ein NOP Pseudo-Anweisung durch ein ADDI Befehl ersetzt, wobei die ADDI Operation keinen Effekt haben darf. Es wird eine ADDI Instruktion ausgegeben, die den Wert 0 auf das ZERO Register addiert! Dieser Ablauf ändert absolut nichts am Zustand der CPU außer, dass ein CPU Zyklus verbraucht wird und sich der Program Counter (PC) auf die folgende Anweisung verschiebt.
+
+In diesem Abschnitt wurde zuvor erwähnt, dass LI Anweisung später aufgelöst werden. Dieser Zeitpunkt ist jetzt gekommen. Nachdem Auflösen der anderen Pseudo-Instruktionen wird nun auch LI aufgelöst. Dabei wird geprüft, ob die LI Anweisung ein Label als Immediate-Wert verwendet. Wenn ein Label verwendet wird, dann wird die Adresse des Labels ermittelt und die Differenz zwischen der aktuellen Adresse und der Label-Adresse gebildet. Wenn die Differenz mit einem simplen LUI geladen werden kann, dann wird nur ein LUI ausgegeben, ansonsten wird eine Kombination aus ADDI und LUI ausgegeben.
+
+Jetzt wird der Call-Optimizer aufgerufen. Wenn eine Routine angesprungen wird, hat der Programmierer meherer Möglichkeiten den Sprung zur Routine zu implementieren. Wenn die Routine innerhalb eines Megabyte relative zur aktuellen Adresse zu finden ist (near call), dann reicht eine einzige JAL Instruktion. Wenn die Routine außerhalb des Megabyte zu finden ist (far call) dann wird eine Kombination aus AUIPC und JALR ausgegeben.
+
+Nachdem alle Pseudo-Instruktionen durch echte Instruktionen ersetzt worden sind und alle Optimierer entschieden haben, ob sie ein oder zwei Instruktionen ausgeben möchten, liegt eine Liste mit ausschließlich "echten" Instruktionen vor. Auf dieser Liste werden jetzt relative Offsets ersetzt. Relative Offsets werden mit f und b und einem Label-Namen notiert. Der Assembler muss im Falle von f das erste folgende Label finden und im Falle von b das erste vorhergehende Label finden. Das gefundene Label wird dann durch seine Adresse ersetzt.
+
+Siehe folgendes Beispiel von https://marz.utk.edu/my-courses/cosc230/book/example-risc-v-assembly-programs/ in dem 1f und 1b verwendet wird. 1 ist hier ein Label, dass doppelt verwendet wird, einmal in f-Richtung und einmal in b-Richtung.
+
+```
+.section .text
+.global strlen
+strlen:
+    # a0 = const char *str
+    li     t0, 0         # i = 0
+1: # Start of for loop
+    add    t1, t0, a0    # Add the byte offset for str[i]
+    lb     t1, 0(t1)     # Dereference str[i]
+    beqz   t1, 1f        # if str[i] == 0, break for loop
+    addi   t0, t0, 1     # Add 1 to our iterator
+    j      1b            # Jump back to condition (1 backwards)
+1: # End of for loop
+    mv     a0, t0        # Move t0 into a0 to return
+    ret                  # Return back via the return address register
+```
+
+Im Anschluss werden Expression-Trees ausgerechnet und in die Instruktion eingesetzt. Danach werden die Modifier HI() und LO() ersetzt.
+
+Der allerletzte Schritt ist es jetzt den Encoder auf jede AsmLine anzuwenden welcher MaschinenCode für die AsmLine ausgibt.
+
+Damit hat der Assembler die Eingabe and en RISC-V CPU erzeugt.
+
 
 # 5. Architektur des Pipelined RISC-V CPU
 
