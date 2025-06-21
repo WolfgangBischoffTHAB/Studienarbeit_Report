@@ -29,7 +29,7 @@ Das Problem liegt in einer Diskrepanz zwischen der RISC-V Spezifikation und Lehr
 
 RISC-V ist eine Instruction Set Architecture (ISA). Ein Instructionset Architecture ist eine Menge an Anweisungen, Registern und Datentypen. Damit beschreibt RISC-V keine konkrete CPU Architektur sondern gibt Befehle und Register vor, die auf einer konkreten Architektur ausführbar und vorhanden sein müssen, damit dieses System RISC-V konform ist. Laut der RISC-V homepage (Quelle: https://riscv.org > about > faq > Who uses an ISA?) ist eine ISA auch im Zuge der Leere einsetzbar damit Stunden die Wirkungsweiße eines Computers verstehen lernen. RISC-V wurde daher auch vor dem Hintergrund der Leere erstellt.
 
-Damit steht RISC-V in Konkurrenz mit dem x86 Instructionset (Chips von Intel, AMD und weiteren), dem ARM Instructionset (Chips von STM32, Renesas, NXP, Qualcomm und andere) und allen anderen definierten Instructionsets (AVR, Itanium (IA-64), MIPS, Z-80 und viele weitere). Die Besonderheit von RISC-V ist das Lizenzmodel. Das Lizenzmodel besteht aus der Erlaubnis zur freien Benutzung und damit der Abwesenheit jeglicher Lizenzkosten (Quelle: https://riscv.org/about/faq/#:~:text=There%20is%20no%20fee%20to%20use%20the%20RISC%2DV%20ISA. In google eingeben: https://riscv.org > about > faq > What is the license model ).
+Damit steht RISC-V in Konkurrenz mit dem x86 Instructionset (Chips von Intel, AMD und weiteren), dem ARM Instructionset (Chips von STM32, Renesas, NXP, Qualcomm und andere) und allen anderen definierten Instructionsets (AVR, Itanium (IA-64), MIPS, Z-80 und viele weitere). Die Besonderheit von RISC-V ist das Lizenzmodel. Das Lizenzmodel besteht aus der Erlaubnis zur freien Benutzung und damit der Abwesenheit jeglicher Lizenzkosten (Quelle: https://riscv.org/about/faq/#:~:text=There%20is%20no%20fee%20to%20use%20the%20RISC%2DV%20ISA. In Google eingeben: https://riscv.org > about > faq > What is the license model ).
 
 RISC-V ist an der Universität UC Berkeley entwickelt worden. Dabei ist RISC-V aus dem Wissenschatz erstellt worden, den die Beteiligten im Zuge der vier Vorgängeprojekte (RISC-I bis RISC-4) sammeln konnten und heißt damit sinnigerweiße RISC-V (Quelle: https://riscv.org > about > faq > Why is it called RISC-V).
 
@@ -64,7 +64,7 @@ Kriterien zur Bewertung von FPGA Entwicklungstools
 - Fehlererkennung der Synthese (logische Loops werden von Yosys nicht erkannt! Vom professionellen Tool schon)
 - Editorqualität (go to definition, highlight von gehovertem Symbol, ...)
 
-Da diese Studienarbeit Lösungen für den Student in einem der unteren Semester sucht, muss davon ausgegangen werden, dass dieser Student keine High-End Hardware zur Verfügung hat um erste Tests mit Hardwarebeschreibungssprachen zu machen und auch nicht bereit ist oder in der finanziellen Situation ist um sich High-End Hardware zu kaufen. Das wahrscheinlichste Szenario ist, dass die Hardware ein Laptop mittlerer Leistungsklasse mit einem Windows-Betriebssystem ist. Im folgenden werden die Messungen auf einem AMD Ryzen 7 PRO 4750U mit 32GB RAM. Die acht Kerne (16 Threads) haben einen Basistakt von 1,7 GHz und einen Boosttakt von 4,1 GHz. Der Prozessor besitzt 512 KB L1 Cache, 4 MB L2 Cache und 8 MB L3 Cache. Die Messungen werden unter Windows 11 Pro, 24H2 (OS build 26100.4349) ausgeführt. 
+Da diese Studienarbeit Lösungen für den Student in einem der unteren Semester sucht, muss davon ausgegangen werden, dass dieser Student keine High-End Hardware zur Verfügung hat um erste Tests mit Hardwarebeschreibungssprachen zu machen und auch nicht bereit ist oder in der finanziellen Situation ist um sich High-End Hardware zu kaufen. Das wahrscheinlichste Szenario ist, dass die Hardware ein Laptop mittlerer Leistungsklasse mit einem Windows-Betriebssystem ist. Im folgenden werden die Messungen auf einem AMD Ryzen 7 PRO 4750U mit 32GB RAM ausgeführt. Die acht Kerne (16 Threads) haben einen Basistakt von 1,7 GHz und einen Boosttakt von 4,1 GHz. Der Prozessor besitzt 512 KB L1 Cache, 4 MB L2 Cache und 8 MB L3 Cache. Das System stamt aus dem Jahr 2020. Die Messungen werden unter Windows 11 Pro, 24H2 (OS build 26100.4349) ausgeführt. Bezüglich der Festplattenkapazität ist mit 250 GB zu rechnen, von denen wahrscheinlich in der Realität nicht mehr viel Platz übrig ist. In dieser Arbeit wird daher auch Augenmerk auf den benötigten Speicherbedarf der Tools gelegt.
 
 # Lattice iCEstick (https://www.latticesemi.com/icestick)
 Der iCEstick der Firma Lattice ist ein FPGA im USB-Stick Format. Damit nimmt er kaum Platz auf dem Schreibtisch ein und kann leicht transportiert weren. Der Anschaffungspreis liegt bei etwa 130-150 Euro. Damit ist der Lattice iCEstick vergleichsweiße teuer. Die Peripherie weißt leider nur wenige Breakout Pins auf, dafür besitzt das Board einen einzigen PMOD Header und 5 LEDs, sowie einen Infrarot IrDA Sensor. Der iCEstick besitzt einen Lattice iCE40HX-1k FPGA chip (https://www.mouser.de/ProductDetail/Lattice/iCE40HX1K-TQ144?qs=F9A14TELRMtiYSwGl6R%2Fcw%3D%3D&srsltid=AfmBOopRdilmfbmh3HyTAYo1qr89NC4w5Ca6M5ykeBUMYd6rbPP2OnCq). Auf dem FPGA hat ein kleiner RISC-V CPU Platz (siehe https://github.com/BrunoLevy/learn-fpga und das FemotRV Projekt). Die offizielle IDE ist iCEcube2 und kann auf Microsoft Windows ausgeführt werden. Der Download von iCEcube2 ist 700MB groß und zur Installtion werden 880MB benötigt. Damit ist das Softwarepacket insgesamt vergleichsweiße klein. Zum Programmieren des Bitstream wird die Diamond Programmer Software verwendet, der den Bitsream in das OnBoard SPI Flash schreibt. Die iCEcube2 Software benötigt einen Lizenz zur Ausführung. Die Lizenz wird auf Anfrage an nicht-kommerzielle Entwickler und Start-Ups ausgegegben. Normalerweiße kostet diese Lizenz Geld. 
@@ -76,7 +76,11 @@ Fazit zum IceStick mit Yosys: Die Verwendung ist für einen Anfänger zu kompliz
 # GOWIN Tang Nano 9K
 Das Board an sich lässt sich für etwa 25 bis 60 Euro kaufen, je nachdem welches zubehör ausgewählt wird. Das Board ist damit vergleichsweiße günstig. Die IDE lässt sich einfach und kostenfrei herunterladen. Der Download der Education Version ist mit 413 MB vergleichsweiße klein und kann auf Microsoft Windows ausgeführt werden. 
 
-Fazit: Es zeigt sich, dass die Arbeit mit dem GOWIN Tang Nano 9K Board am ehesten der Arbeit mit einem Arduino gleicht. Die IDE ist simpel und erste Verilog Module lassen sich schnell umsetzen und auf das Board laden. Die Synthese erfolgt sehr schnell, was die Wartezeiten gering hält. Dabei erkennt die Synthese viele relvante Fehler und gibt Warnungen und Fehler aus! Die IDE hat eine Bibliothek für IP-Cores, um z.B. einfach Speicher synthetisieren zu lassen. Es gibt einige gut dokumentierte Beispiele auf der Homepage des Produkts. Für einen Anfänger ist dieses Board gut geeignet, da er in der Lernphase sehr viele Fehler machen wird und die unkomplizierte und schnelle Deployment des Board damit einen großen Vorteil darstellt.
+Fazit: Es zeigt sich, dass die Arbeit mit dem GOWIN Tang Nano 9K Board am ehesten der Arbeit mit einem Arduino gleicht. Die IDE ist simpel und erste Verilog Module lassen sich schnell umsetzen und auf das Board laden. Die Synthese erfolgt sehr schnell, was die Wartezeiten gering hält. Dabei erkennt die Synthese viele relvante Fehler und gibt Warnungen und Fehler aus! Die IDE hat eine Bibliothek für IP-Cores, um z.B. einfach Speicher synthetisieren zu lassen. Es gibt einige gut dokumentierte Beispiele auf der Homepage des Produkts. Für einen Anfänger ist dieses Board gut geeignet, da er in der Lernphase sehr viele Fehler machen wird und die unkomplizierte und schnelle Deployment des Board damit einen großen Vorteil darstellt. Die beschrieben Designs lassen sich tatsächlich auf dem FPGA testen. Damit sinkt die Wahrscheinlichkeit sich mit Design und deren Simulation zu beschäftigen, die dann später nicht auf dem FPGA funktionieren.
+
+# Digilent Arty S7
+
+Das Arty S7 wird in unterschiedlichen Varianten angeboten. Hier wird die Variante XC7S25-1CSGA324 mit 23360 Logikelementen bewertet. Es handelt sich um die kleinste Ausführung des FPAG. Das Board hat genug Platz für einen simplen RISC-V CPU. Der Preis beläuft sich auf etwa 120 Euro und ist damit vergleichsweiße erschwinglich. Ein Vorteil des Boards ist seine Peripherie. Es werden viele PMOD Ports angeboten, es gibt Switch-Schalter, Push-Buttons und LEDs direkt auf dem Board. Zusätzlich besitzt das Board das Header-Layout eines Arduino. Damit lassen sich Arduino-Shields verwenden, wenn man die Spannugspegel berücksichtigt (Arduino-Systeme sind 5V Systeme während FPGAs normalerweiße weniger Spannung erwarten). Das Board ist nicht sehr groß und in der Verpackung sehr einfach zu transportieren. Strom wird ausschließlich durch die USB-Verbindung bereitgestellt. Das Board wird mit der Vivado IDE verwendet und programmiert. Hier wird auf jeden Fall sehr viel Festplatten Speicher benötigt. Es wird ein zwischenzeitlicher Speicherbedarf von 62,59 GB angegeben mit einen letztendlichen Speicherbedarf von 45,53 GB. Gemessen wurde vor der Installation 355 GB freier Speicher und nach der Installation 305 GB freier Speicher. Damit wurden 50 GB auf der Platte belegt. Im AMD Unified Installer wurde die Option "Vivado" und "Vivado ML Standard" ausgewählt, da es sich bei "Vivado ML Standard" um die kostenfrei Version der Software handelt. Zusätzlich werden die Pakete für die 7-Series ausgewählt, da auf dem Arty S7 ein Spartan 7 FPGA bestückt ist.
 
 
 Fazit:
@@ -219,5 +223,51 @@ Die JTAG-Debug Probe wird für erste Tests über einen Arduino DUE (3.3 Volt-Sys
 Um den Hart zu stoppen, hat der DM Kontroller über die Hardware Clock-Source, die den Hart mit einem Taktsignal verorgt. Wenn die Clock-Leitung unterbrochen wird, dann ist der Hart gestoppt. Zum Single-Step Betrieb generiert der DM ein eigenes Clock-Signal und führt dem Hart dieses Clock-Signal zu. Wenn der Hart fortgesetzt wird, dann wird die Hardware Clock-Source wieder zugeführt.
 
 ## JTAG State Machine
+
+JTAG ist ein sehr allgemeines System. Die grundlegende Annahme die JTAG macht ist, dass jedes Gerät aus Registern besteht. JTAG definiert das Vorhandensein der Register IR (Instruction Register), BYPASS und mehrere Datenregister, über die jedes Gerät selbst entscheidet. Jedes Gerät sollte zumindest ein IDCODE Datenregister haben.
+
+Um auf ein Datenregister zuzugreifen, wird der Instruction Code für dieses Datenregister in IR abgelegt. Damit wird das betreffende Datenregister aktiviert. Zu jedem Zeitpunkt kann nur ein einziges Datenregister aktiviert sein oder das BYPASS Register kann aktiviert sein. Das IR register ist parallel dazu immer aktiv es kann immer auf IR zugegriffen werden. JTAG schreibt vor, dass beim Start des Systems das IR Register so befüllt sein muss, dass das IDCODE Datenregister vorausgewählt wird.
+
+Die Art und weiße, wie mit Registern interagiert wird ist verblüffend, wenn man sich zum ersten mal mit JTAG auseinander setzt. JTAG ermöglicht es mit lediglich vier Steuersignalen Register beliebiger Breite in einem Schreibzyklus zu schreiben. Dazu findet ein Umsetzung der seriellen Signale zur übertragung in eine Parallele Verarbeitung der Signale zum tatsächlichen Schreiben der Register statt. Es wird zunächst ein Shift-Register seriell befüllt und dann das Schrieben auf einen Schlag parallel ausgeführt. Die Serielle Befüllung dauert mehrere Zyklen. Das Beschreiben geschieht in einem einzigen Zyklus.
+
+Es gibt ein Shift-Register für IR, ein Shift-Register für BYPASS und Shift-Register für die Datenregister. Wenn Datenregister gleiche Breite haben, können sich ein Shift-Register teilen. Datenregister mit spezieller Breite benötigen auch passender Shift-Register dieser Breite.
+
+Zunächst definiert JTAG eine Zustandsmaschine aus 16 Zuständen. Die Zustandsmachine hat grundsätzlich zwei Arme. Ein Arm aktiviert das Shift-Register für IR und lädt Daten aus dem IR Register in das IR-Shift-Register. Daten können dann gleichzeitig aus dem IR Shift-Register ausgeschiftet und eingeschiftet werden. Der andere Arm führt die entsprechenden Funktionen für das aktuell ausgewählte Datenregister oder BYPASS Register aus.
+
+TODO: Bild der StateMachine
+
+Jedes JTAG Gerät muss intern diese JTAG Zustandsmaschine ausführen. Die Zustandsmaschine ist im JTAG TAP enthalten. Ein Gerät kann einen oder mehrere JTAG TAPs (Test Access Port) aufweißen. Mehrere Geräte mit jeweils mehreren TAPs können Teil einer JTAG Verbindung sein. In JTAG wird nicht über eine Punkt-zu-Punkt Architektur kommuniziert, es wird stattdessen eine Daisy-Chain aus JTAG TAPs gebildet. Durch diesen minimalistischen Ansatz ist das System über nur vier Signale steuerbar. 
+
+TODO Bild der Daisy Chain aus Vivado
+
+Dabei werden alle Shift-Register aller TAPS in einer langen Daisy-Chain aneinander gehängt! 
+
+TODO: Bild Figure 2 von Medium einfügen. (https://medium.com/@aliaksandr.kavalchuk/diving-into-jtag-protocol-part-1-overview-fbdc428d3a16)
+
+Alle bits werden von Anfang bis Ende durch diese Daisy Chain geschiftet und durchlaufen dabei alle Shift-Register aller TAPs! Das Bedeutet die Komponente, die mit der Daisy-Chain kommuniziert kann Daten lediglich an einen bestimmten TAP schicken, indem Sie Daten am Anfang der Daisy Chain einspeist und dann durch alle Register bis zum Ziel-TAP shifted. Eine weitere Besonderheit ist, das die Geräte in der Daisy-Chain keine Adressen haben sondern die Reihenfolge tatsächlich eine Rolle spielt. Es ist nicht möglich das ein Teil der Daisy-Chain Daten einfach bis zum Adressat durchreicht. Vielmehr werden Datenbits von links nach rechts geschiftet, bis sie im richtigen TAP landen.
+
+Alle Zustandsmachinen in allen JTAG TAPs der DaisyChain befinden sich zu jedem Zeitpunkt im gleichen Zustand und führen synchron Transitionen aus. Um die synchronen Transaktionen zu ermöglichen sind die JTAG Steuersignale Test Clock (TCK) und Test Mode Select (TMS) parallel an alle JTAG TAPs angeschlossen. Das bedeutet, alle Zustandsmachinen haben den gleichen IR Registerinhalt und damit haben alle Maschinen das gleiche Shift-Register ausgewählt!
+
+Die Steuersignal Test Data In (TDI) und Test Data Out (TDO) sind im Falle von TDO am Anfang der DaisyChain und im Falle von TDI am Ende der DaisyChain angeschloßen. Es ist damit möglich gleichzeitig ein Bit einzushiften (TDI) und dabei gleichzeitig ein Bit zu lesen, das in TDO ausgeschiftet worden ist.
+
+TODO eventuell einfügen Bild Seite 29 von https://tu-dresden.de/ing/informatik/ti/vlsi/ressourcen/dateien/dateien_studium/dateien_lehstuhlseminar/vortraege_lehrstuhlseminar/hs_ws_0708/jtag-schnittstelle.pdf?lang=de
+
+Mit JTAG ist es also möglich Werte in Register zu schreiben, zu warten und dann Werte aus Registern zu lesen. Oft werden Operationen in den Geräten angestoßen, sobald ein Register mit einem Wert beschrieben worden ist. Dabei wird ein bestimmter Wert in ein Shift-Register geschiftet. Wenn dann im Zustand UPDATE-DR der Wert aus dem Shift Register in das echte Datenregister zurückkopiert wird, findet die Ausführung der Operation statt.
+
+Die RISC-V Debug Spezifikation definiert eine Reihe von Operationen, die durch das Schreiben bestimmter Register angestoßen werden.
+
+## Implementierung in Verilog
+
+Die JTAG Zustandsmachine ist in jtag_tap.v zu finden. Das Modul besitzt die Signale jtag_clk, jtag_tms, jtag_tdi und jtag_tdo. Ein Always-Block reagiert auf die negative Flanke der JTAG Clock und shifted ein Bit aus jtag_tdo aus. Ein anderer Always-Block regiert auf die positive Flanke der JTAG Clock und bestimmmt den nächsten Zustand der Statemachine. Dieser Block führt auch Aktionen aus, die für die jeweiligen Zustände ausgeführt werden sollen.
+
+Wenn CAPTURE_DR betreten wird, wird abhängig vom IR Register das gewählte Datenregister in das entsprechende Shift-Register übertragen. Entsprechendes gilt wenn CAPTURE_IR betreten wird.
+
+Im SHIFT_DR Zustand, wird abhängig vom IR Register das jeweilige Shift Register um eine position geshiftet. Das TDO bit wird für die folgende fallende Flanke gespeichert bevor TDI in das Register einfügt wird. Für SHIFT_IR gilt das gleiche.
+
+Die Zustände EXIT1, EXIT2 und PAUSE sind weder für die Datenregister noch für die IR Register mit Aktionen belegt.
+
+Im UPDATE_DR Register wird das Shift-Register in das Datenregister zurück kopiert. Dabei wird dieser Zeitpunkt auch verwendet um Aktionen anzustoßen. Beispielsweiße wird im Falle des DTM.dmi Register eine DMI Transaktion über den Wishbone Bus mit dem DM aktiviert. Dies ist der wichtigste Teil der Statemachine.
+
+
 
 ## RISCV Abstract Commands
