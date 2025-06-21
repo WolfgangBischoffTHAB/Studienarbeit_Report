@@ -82,13 +82,13 @@ Fazit: Es zeigt sich, dass die Arbeit mit dem GOWIN Tang Nano 9K Board am eheste
 
 Das Arty S7 wird in unterschiedlichen Varianten angeboten. Hier wird die Variante XC7S25-1CSGA324 mit 23360 Logikelementen bewertet. Es handelt sich um die kleinste Ausführung des FPAG. Das Board hat genug Platz für einen simplen RISC-V CPU. Der Preis beläuft sich auf etwa 120 Euro und ist damit vergleichsweiße erschwinglich. Ein Vorteil des Boards ist seine Peripherie. Es werden viele PMOD Ports angeboten, es gibt Switch-Schalter, Push-Buttons und LEDs direkt auf dem Board. Zusätzlich besitzt das Board das Header-Layout eines Arduino. Damit lassen sich Arduino-Shields verwenden, wenn man die Spannugspegel berücksichtigt (Arduino-Systeme sind 5V Systeme während FPGAs normalerweiße weniger Spannung erwarten). Das Board ist nicht sehr groß und in der Verpackung sehr einfach zu transportieren. Strom wird ausschließlich durch die USB-Verbindung bereitgestellt. Das Board wird mit der Vivado IDE verwendet und programmiert. Hier wird auf jeden Fall sehr viel Festplatten Speicher benötigt. Es wird ein zwischenzeitlicher Speicherbedarf von 62,59 GB angegeben mit einen letztendlichen Speicherbedarf von 45,53 GB. Gemessen wurde vor der Installation 355 GB freier Speicher und nach der Installation 305 GB freier Speicher. Damit wurden 50 GB auf der Platte belegt. Im AMD Unified Installer wurde die Option "Vivado" und "Vivado ML Standard" ausgewählt, da es sich bei "Vivado ML Standard" um die kostenfrei Version der Software handelt. Zusätzlich werden die Pakete für die 7-Series ausgewählt, da auf dem Arty S7 ein Spartan 7 FPGA bestückt ist.
 
+Die Vivaso IDE ist im Vergleich zur GOWIN IDE langsamer aber leistungsstärker. Sie erkennt ebenfalls viele Fehler und warnt damit den Benutzer bevor er Zeit verschwendet. Die Auswahl an IP-Blöcken ist sehr umfrangreich und deren Konfiguration wird durch eine Menüführung mit vielen Auswahloptionen unterstüzt.
+
 
 Fazit:
 Tang Nano 9K wird für schnelle Tests verwendet. Das System wird letzendlich auf dem Arty S7 integriert.
 
-# 3. Erlernen der HDL Verilog
 
-TODO
 
 # 4. Erstellen des Assemblers
 
@@ -190,11 +190,13 @@ TODO: Hier Bild 7.61 von Seite 453 aus [111] einfügen
 
 Hier ist die Kontrolllogik und die HazardUnit am unteren Rand der Abbildung in blauer Farbe und der Datenpfad in der Mitte in schwarzer Farbe dargestellt.
 
+### Datenpfad
+
 Im Grunde besteht der Datenpfad aus der Hardware, die den CPU ausmachen. Es sind Speicher, SignExtender, Multiplexer und die redundante ALU enthalten. Der Datenpfad verarbeitet die Phasen der Pipeline in getakteter Form basierend auf dem Clock Signal. Ohne geeignete Steuersignale können die Multiplexer nicht entscheiden, welche Daten sie Auswählen und weitergeben. Ohne Steuersignale weiß die ALU auch nicht, welche Operation sie ausführen soll. Die Steuersignale stammen aus der Kontrolllogik.
 
-Die Kontrolllogik besteht aus kombinatorischer Logik. Ihre Aufgabe besteht darin die Information so zu kombinieren, dass sie die korrekten Steuersignale für jeden Befehl and den Datenpfad weitergeben kann um den Befehl auszuführen. In diesem Sinne konfiguriert sich der Datenpfad dann ständig um, um dem aktuellen Befehl gerecht zu werden.
-
 ### Kontrolllogik
+
+Die Kontrolllogik besteht aus kombinatorischer Logik. Ihre Aufgabe besteht darin die Information so zu kombinieren, dass sie die korrekten Steuersignale für jeden Befehl and den Datenpfad weitergeben kann um den Befehl auszuführen. In diesem Sinne konfiguriert sich der Datenpfad dann ständig um, um dem aktuellen Befehl gerecht zu werden.
 
 Die Kontrolllogik wird durch das Modul "controller" in der Datei controller.v implementiert. Die Eingabe-Ports entsprechen den dekodierten Fehler der aktuellen Instruktion nach der FETCH Phase. Die Ausgaben des Moduls entsprechen allen Linien, die aus der Kontrolllogik in den Datenpfad und die Hazard-Unit reichen.
 
@@ -206,16 +208,40 @@ Nach dem Ausschöpfen aller Ideen wurde die Idee der Zustandsmachine durch eine 
 
 Liegen die erzeugten Steuersignal einmal vor, werden sie in die PipelineRegister eingezetzt und bewegen sich ab dann parallel zur Instruktion durch die Pipeline bis der Befehl abgearbeitet ist.
 
-### Data Hazards
+### Data Hazards und die Hazard Unit
 
-TODO: Beschreibe die HazardUnit.
+Eine Pipeline soll den Durchsatz eines CPU erhöhen indem Sie optimalerweiße vollumfänglich mehrere Befehle ausführt. Die Effizienz einer strikt entworfenen Piepline ist nicht immer 100 Prozent. Manchmal folgen Befehle aufeinander so dass die Informationen für den zweiten Befehl aus dem ersten kommen und nicht direkt verfügbar sind. Daher wird eine theoretisch strikte Pipeline angepasst um den Durchsatz auch bei ungünstigen Befehlsfolge zu erhöhen. Diese ungünstigen Situation werden Hazards genannt.
+
+Es gibt unterschiedliche Arten von Hazards. Neben Hazards, die sich durch zustätzliche Hardware lösen lassen, gibt es Hazards, die lediglich durch einen Pipeline Stall beseitigt werden können. Die HazardUnit hat die Aufgabe Hazards zu erkennen und Steuersignale auszugeben, die die Pipeline in die Lage zu versetzen Befehle korrekt zu Ende zu führen, auch wenn ein Hazard vorliegt.
+
+Die HazardUnit ist in hazard_unit.v implementiert. Data Hazards ergeben sich in folgender Befehlsfolge:
+
+```
+add s8, s4, s5
+sub s2, s8, s3
+```
+
+Das Ergebnis der Addition steht erst nach der WriteBack Phase im Register s8, wird aber bereits in der folgenden Execute Phase von dort gelesen. Zur Lösung dieses Problems aktiviert die Hazard Unit ihr ForwardAE oder Forward BE Signal. Durch eine explizit hinzugefügte Leitung kann das Ergebnis einer Operation in direkt in der vorhergehenden Phase gemultiplext werden. Der Multiplexer wird dabei durch die Signale ForwardAE oder Forward gesteuert. Siehe Figure 7.55 auf Seite 447. Um die Verwendung der Register erkennen zu können werden der HazardUnit die Parameter aus dem Decoding des Befehls zugeführt. Hazards werden anhand einer logischen Bedingung beschrieben und lassen sich dadurch erkennen.
+
+Es gibt Hazards, bei denen ein berechneter Wert aus der Zukunft abgeholt werden müsste um eine Berechnung durchzuführen. Da man nicht in die Zukunft reisen kann bleibt nur ein Ausweg: Es wird auf den Wert gewartet, den es noch nicht gibt. Warten in einer Pipeline wird Stall genannt. Jede Stage in der Pipeline hat einen Stall-Eingang bzw Enable-Eingang. Das Stall Steuersignal wird von der HazardUnit aufgrund einer logischen Bedingung berechnet. Wenn eine Pipeline Stage gestallt wird, als nicht enabled ist, führt sie einfach keine Aktion aus, behält aber ihren Zustand wie gehabt bei, so dass sie später fortfahren kann, wenn die benötigten Information vorliegen. Ein Beispiel das einen Stall auslöst ist
+
+```
+lw s7, 40(s5)
+and s8, s7, t3
+```
+
+Der Wert aus dem Speicher ist zu dem Zeitpunkt an dem er mit t3 verunded werden soll noch gar nicht aus dem Speicher geladen worden. Der and-Befehl muss daher noch einen Clock-Zyklus warten, bis der Wert geladen ist. Die Execute-Stage muss bereinigt werden, während die Dekode Phase und die vorhergehende Fetch Phase beide gestallt werden müssen! Nun kann der and-Befehl aus der Dekode-Phase in die Execute-Phase übergehen, und der aus dem speicher geladene Wert wird der and-Anweisung zugeführt. Das löschen der Daten in der Execute-Phase ist notwendig, da sonst inkorrekte Daten durch die Pipeline laufen und falsche Ergebnisse liefern könnten.
+
+Die letzte Gruppe der Hazards hinterlässt Überreste angefangener Befehle in Pipeline wobei diese angefangenen Befehle niemals zu Ende geführt werden dürfen. Die geschieht bei Branches, die Befehle überspringen. Ob ein Branch tatsächlich ausgeführt wird ist erst klar, wenn die folgenden Befehle bereits in die Phasen der Pipeline gelangt worden sind. Die Hazard Unit erkennt den Hazard indem sie das PCSrcE Signal überwacht, dass Branches aktiviert oder eben nicht. PCSrcE besteht aus einer eignen Logik in der Control-Logik. Das PCSrcE Signal wird er HazardUnit zugeführt. Um die Pipeline Stages zu löschen, gibt die HazardUnit Flush Signale an die Clear Eingänge der PipelineRegister aus. Damit führt ein Flush Kontrollsignal dazu das die Pipeline Register ihren Inhalt vergessen bzw. löschen. Durch das Löschen gelangen die halb abgearbeiteten Befehle nicht in die hinteren Phasen der Pipeline und führen damit keine Aktionen aus.
+
+Der Code in dem HazardUnit Modul hat keinen Zustand und besteht lediglich aus logischen Kombinationen, die aus den Eingabesignalen die Steuersignale berechnen.
 
 
 
 
-Talk about Control Logik and Data Path
 
-# 6. RISC-V Debug Spezifikation und JTAG-DebugProbe on Arduino
+
+# 6. RISC-V Debug Spezifikation
 
 Quellen: 
 [100] https://five-embeddev.com/riscv-debug-spec/v0.13-release/core_debug.html
@@ -257,8 +283,6 @@ Für einen einfachen Debugger sollen folgende Funktionen implementiert werden:
 - Speicher lesen schreiben
 
 Mit diesen Funktionen kann Maschinen code auf den RISC-V CPU geladen werden und das Programm kann im Single-Step Betrieb ausgeführt werden.
-
-Die JTAG-Debug Probe wird für erste Tests über einen Arduino DUE (3.3 Volt-System) und über Bit-Banging implementert. Python Skripte werden auf dem PC ausgeführt und sprechen mit dem Arduino über ein simples Datenaustauschprotokoll. Der Debugger besteht aus einzelnen Pyhton Skripten.
 
 Um den Hart zu stoppen, hat der DM Kontroller über die Hardware Clock-Source, die den Hart mit einem Taktsignal verorgt. Wenn die Clock-Leitung unterbrochen wird, dann ist der Hart gestoppt. Zum Single-Step Betrieb generiert der DM ein eigenes Clock-Signal und führt dem Hart dieses Clock-Signal zu. Wenn der Hart fortgesetzt wird, dann wird die Hardware Clock-Source wieder zugeführt.
 
@@ -325,4 +349,68 @@ Eine dritte Möglichkeit sind abstrakte Commandos. Abstrakte Commandos werden so
 In dieser Studienarbeit wird der dritte Ansatz ausgewählt. Dabei wird kein Program Buffer verwendet. Da der simple Hart keine Privilegien implementiert ist das System konform zur Debug Spezifikation, wenn der DM den Speicherzugriff einfach direkt selbst implementiert und ausführt. Es wird einfach direkt auf den Speicher zugegriffen. Dabei wird kein Bus zwischen DM und Speicher verwendet, da der simple RISC-V CPU keinen internen Bus besitzt.
 
 TODO: beschreibe den Verilog-Code für den Speicherzugriff.
+
+## Zusammenfassendes Beispiel
+
+Das Schreiben in den Speicher über JTAG innerhalb der RISC-V Debug Spezifikation umfasst folgende Abfolge. Zunächst muss ein DMI Command abgesetzt werden, damit der DTM in den DM schreibt. Dazu wird der DMI Command in das DTM dmi register geschrieben. Der DMI Command ist ein Schreibbefehl in das Control Register des DM. Der Wert, der in das DM control Register geschrieben wird ist ein Abstract Command. Diese Abstract Command schreibt einen Wert in den Speicher. Der Wert der in den Speicher geschrieben wird, wird im Data0 register erwartet, die Adresse an die geschrieben wird, wird im Data1 Register erwartet. Streng genommen muss also vor dem Ausführen des Abstract Commands also zunächst Data0 und Data1 geschrieben werden. Wenn der Abstract Command ausgeführt worden ist, gibt es keinen Rückgabewert!
+
+Das Lesen aus dem Speicher erfolgt ebenfalls über einen Abstract Command. Dieser startet ebenfalls dadurch, dass ein DMI Command, welcher einen Wert in das DM Command Register schreibt, in das DTM dmi Register geschrieben wird. Damit wird der DMI Command in den DM schreiben. Die Adresse von der gelesen werden soll, muss sich im Register Data1 befinden. Der aus dem Speicher gelesene Wert wird im Data0 Register zurückgegeben. Von dort kann er mit einem anderen Abstract Command abgefragt und an den Debugger über JTAG zurückgegeben werden.
+
+## Debug Probe und Python Skripte
+
+Es gibt JTAG DebugProbes wie z.B. den Segger J-Link, den Jtagulator oder den simpleren GoodFet. Da die Implementierung in dieser Studienarbeit keine volle JTAG Implementierung liefert, wird eine einfache Umsetzung über einen Arduino DUE erstellt. Der Arduino Due kommuniziert über UART mit einem PC auf dem Python Skripte ausgeführt werden und setzt auf der anderen Seite Kommandos in die vier Signale JTAG_TMS, JTAG_CLK, JTAG_DTI und JTAG_DTO um.
+
+Anbei ein kleiner Auszug, der zeigt, wie der Arduino die Zustandsmachine antreibt, indem er das TMS eintaktet:
+
+```
+for (size_t i = 0; i < len; i++) {
+
+    uint8_t bit = *in_data & 0x01;
+    *in_data >>= 1;
+
+    delay(delay_in_ms);
+    digitalWrite(jtag_clk, LOW);
+    jtag_clk_state = LOW;
+      
+    digitalWrite(jtag_tms, tms_data);
+    digitalWrite(jtag_tdo, bit);
+
+    delay(delay_in_ms); 
+    digitalWrite(jtag_clk, HIGH);
+    jtag_clk_state = HIGH;
+
+    // cause negedge and read data
+    delay(delay_in_ms);
+    digitalWrite(jtag_clk, LOW);
+    jtag_clk_state = LOW;
+
+    delay(delay_in_ms);
+    int val = digitalRead(jtag_tdi);
+    *read_data >>= 1;
+    *read_data |= (val << 7) << 24;
+  }
+}
+```
+
+Das Protokoll zwischen den Python Skripten und dem Arduino definiert ein einfaches Datenformat und lediglich drei Kommandos. Das Ping Kommand wird mit einem Pong beantwortet und dient lediglich zum Test ob der Arduino antwortet. Der SEND_TMS Kommand kann verwendet werden um die StateMachines anzutreibem ohne Daten über TDI zu schicken. Das letzte Kommando ist SHIFT_DATA. Hier wird eine Menge an Bits über TDI in alle StateMachines geschiftet. Dabei kann angegeben werden, welches Signal an TMS angelegt werden soll. Dies it notwendig um ein Register bis auf das letzte Bit zu füllen und dann zusammen mit dem letzten Bit auch ein TMS Signal zu schicken, mit dem die StateMachine dann angewießen wird den Shift-Zustand zu verlassen, so dass das Register "versiegelt" wird und keine falschen Daten mehr in das Register gelangen! Register werden nämlich nur während des Shift Zustandes mit Daten aus TDI versorgt.
+
+Innerhalb der Python Skripte wird mit der ZustandMaschine umgegangen um bestimmte Register auszuwählen und Daten in diese Register zu shiften. Damit lassen sich die Abfolgen für abstrakte Kommmandos ausführen.
+
+# Abschluss und Ausblick.
+
+Es wurde Hardware und Software verglichen, bewertet und ausgewählt um einen einfachen RISC-V Kern mit einer Pipeline zu implementieren. Das Design wurde beschrieben. Das RISC-V Systems wurde um eine Programmierschnittstelle per JTAG unter verwendeung der RISC-V Debug-Spezifikation erweitert. Damit ist das System um eigene Software erweiterbar. Die Software kann durch einen eigens erstellten Assembler für 32-Bit RISC-V übersetzt und durch einen eigens entwickelten Emulator vorgeprüft werden. 
+
+Damit ist das Ziel einen Studenten eine Weg zur Implementierung eines RICS-V Systems aufzuzeigen erreicht.
+
+Es gibt Teile der Implementierung die vervollständigt werden können. Es sind nicht alle RV32I Befehle im Kern ausführbar. Mehrere interessante Extensions könnten hinzugefügt werden wie beispielsweiße Komprimierte Befehle oder Fließkommaarithmetik. Ein Systembus mit MemoryMapped Peripherie könnte hinzugefügt werden. Damit wird der RISC-V Hart immer mehr zu einem Mikrocontroller Design und kann mit externen Hardwarebausteinen kommunizieren.
+
+Die Übertragung der JTAG Befehle über den Arduino ist funktionsfähig allerdings momemtan sehr langsam getaktet, da die Always-Blöcke, die im FPGA auf die JTAG Clock reagieren oft Bits verpassen oder duplizieren, wenn der Takt angehoben wird. Das ist unverständlich, da die Verbindung langsamer aus ein UART mit Baudrate 115200 ist und damit eigentlich noch einfach für einen FPGA handhabbar sein sollte. An dieser Stelle kann das Verfahren mit echter JTAG Hardware nachgeprüft und die Übertragungsrate angehoben werden. Momentan wurde lediglich die Machbarkeit gezeigt.
+
+Dies ist der Anfang der FPGA Entwicklung. Es ist sehr viel Erfahrung notwendig um funktionierende Systeme zu bauen. Ein Anfänger kann richtig oft nicht von falsch unterscheiden und muss durch Fehler lernen. Die kommenden Schritte werden sein aus anderen Design zu lernen und so viele Bücher über Verilog und VHDL zu lesen wie möglich.
+
+## Danksagung
+
+Ich bedanke mich sehr herzlich bei Dr. Christian Jakon für die Betreeung der Arbeit und seine Hilfestellung und Ratschläge beim Erstellen dieser Arbeit. FPGAs haben einen sehr hohen Stellenwert für mich und das Erstellen dieser Arbeit bringt mich meinem Ziel sehr viel näher. Nebenbei gesagt, hat die Arbeit mit dem RISC-V System und dem FPGA auch sehr viel Spaß gemacht. In einer Umgebung die aus kleinsten Bausteinen besteht kann mit Kreativität eine vielzahl an Lösungen erstellt werden, auch wenn der Weg zur Lösung oft ein steiniger ist.
+
+
 
