@@ -131,7 +131,7 @@ Das Ergebnis des Parsing ist ein Parse-Tree. Ein Visitor wird über den Parse-Tr
 
 Der nächste Schritt ist das Anwenden einer ersten einfachen Optimierung. Wenn sich im Quellcode lui und addi Anweisungen befinden, kann ein Paar dieser Anweisungen durch eine LI (Load Immediate) Pseudo Instruktion ersetzt werden. Dies erscheint zunächst kontraproduktiv, da ein Assembler eher Pseudoinstruktionen auflösen als erstellen soll. Es ergibt nur dann Sinn, wenn man weiß, das zu einem späteren Zeitpunkt wieder Pseudoinstruktionen aufgelöst werden. Während der Auflösung hat der Assembler die Freiheit die LI Instruktion zu optimieren und es wird eventuel anstelle des lui, addi Paares nur ein lui ausgegeben. Durch dieses Verhalten korrigiert der Assembler eventuel unnötig eingefügt Instruktionen durch den Programmierer. Diese Optimierung wurde übernommen, da andere Assembler das gleicher Verhalten haben und sich die Ergebnisse des eigenen Assemblers nur mit anderen Assemblern gegenprüfen lassen, wenn man diese Optimierung auch anwendet.
 
-TODO: Füge eventuell Beispiel einer optimierung ein:
+TODO: Füge eventuell Beispiel einer Optimierung ein:
 
 Im Folgenden erstellt der Assembler eine Tabelle von .equ Konstanten mit deren Werten, damit er Konstanten in Parametern, Expressions und Labeln durch numerische Werte ersetzen kann.
 
@@ -173,7 +173,47 @@ Damit hat der Assembler die Eingabe and en RISC-V CPU erzeugt.
 
 # 5. Architektur des Pipelined RISC-V CPU
 
-TODO
+Das Design des RISC-V Multicycle CPU basiert auf dem Design aus dem Buch [111][Digital Design and RISC-V Computer Architecture von Harris & Harris]. Das Buch gibt einen RV32I Kern vor, der vollständig in Verilog und auch VHDL Code angegeben ist und nur eine Teilmenge der Befehle unterstützt. Der angegebene Code implementiert einen Single Cycle CPU, der keine Pipeline besitzt. Damit durchläuft er alle benötigten Phasen (Fetch, Decode, Execute, Memory Access und WriteBack) für jeden einzelnen Befehl bis ein einziger Befehl abgearbeitet ist, bevor er mit der nächsten Anweisung fortfährt.
+
+In einer zweiten Ausbaustufe, wird die Architektur dann um einzelne Phasen erweitert. Für die zweite Stufe gibt es im Buch keinen Quellcode mehr. Das Buch beschreibt lediglich die Architektur und bespricht die Wirkungsweiße. Die letzte Ausbaustufe verwendet die einzelnen Phasen und erweitert den RISC-V CPU um eine Pipeline, die mehr als eine Anweisung gleichzeitig ausführt. Diese dritte Aufbaustufe wird ebenfalls nur beschrieben. Diese Studienarbeit implementiert diese Ausbaustufe in Verilog.
+
+Die Phasen in einer Pipeline anzuordnen erlaubt es dem CPU jede Phase für einen anderen Befehl zu verwenden. Dies wird möglich, wenn man zusätzliche Hardware einfügt und damit Redundanzen schafft. Dies wird beispielsweiße für das ALU Modul gemacht, welches doppelt instantiiert wird. Durch redundante Hardware kann die Pipeline mehr als einen Befehl gleichzeitig bearbeiten.
+
+Um alle benötigten Informationen durch die Pipeline zu führen, werden die Phasen der Pipeline durch sogenannte Pipeline Register getrennt.
+Diese Pipeline Register erlauben es beispielweiße die dekodierten Parameter im Datenpfad oder die Steuersignale in der Kontrolllogik parallel zum Befehl durch die Pipeline zu führen, damit sie immer verfügbar sind.
+
+## Design
+
+Eine Übersicht über das Design wird in der Abbildung xyz gegeben:
+
+TODO: Hier Bild 7.61 von Seite 453 aus [111] einfügen
+
+Hier ist die Kontrolllogik und die HazardUnit am unteren Rand der Abbildung in blauer Farbe und der Datenpfad in der Mitte in schwarzer Farbe dargestellt.
+
+Im Grunde besteht der Datenpfad aus der Hardware, die den CPU ausmachen. Es sind Speicher, SignExtender, Multiplexer und die redundante ALU enthalten. Der Datenpfad verarbeitet die Phasen der Pipeline in getakteter Form basierend auf dem Clock Signal. Ohne geeignete Steuersignale können die Multiplexer nicht entscheiden, welche Daten sie Auswählen und weitergeben. Ohne Steuersignale weiß die ALU auch nicht, welche Operation sie ausführen soll. Die Steuersignale stammen aus der Kontrolllogik.
+
+Die Kontrolllogik besteht aus kombinatorischer Logik. Ihre Aufgabe besteht darin die Information so zu kombinieren, dass sie die korrekten Steuersignale für jeden Befehl and den Datenpfad weitergeben kann um den Befehl auszuführen. In diesem Sinne konfiguriert sich der Datenpfad dann ständig um, um dem aktuellen Befehl gerecht zu werden.
+
+### Kontrolllogik
+
+Die Kontrolllogik wird durch das Modul "controller" in der Datei controller.v implementiert. Die Eingabe-Ports entsprechen den dekodierten Fehler der aktuellen Instruktion nach der FETCH Phase. Die Ausgaben des Moduls entsprechen allen Linien, die aus der Kontrolllogik in den Datenpfad und die Hazard-Unit reichen.
+
+Das Controller Modul enthält hauptsächlich die eingebettete Kontrolllogik des SingleCycle Designs. Des weiteren sind lediglich die notwendigen Pipeline Register enthalten um die Daten durch die Pipeline zu führen. Die SingleCycle Controlllogik besteht aus dem MainDecoder und dem AluDecoder. Der MainDecoder entnimmt der Instruction durch Dekodierung die Steuersignale für den Datenpfad. Der AluDecoder entnimmt der Instruktion die Operation, die die ALU ausführen muss.
+
+Während der Entwicklung wurde zu Beginn ein schwerer Fehler begangen, der sehr viel Zeit gekostet hat. Das Buch [111] stellt beispielsweiße auf Seite 436 eine Zustandsmaschine für die Ausführung der Kontrolllogik dar. Hiervon inspiriert wurde die erste Version der Kontrolllogik als ebendiese Zustandsmaschine implementiert. Das Design hat teilweiße funktioniert und wurde daher in zeitraubender Feinstarbeit debugged und angepasst. Letztendlich lies sich die Funktion mit diesem Design nicht bewerkstelligen. Sich dieses Umstands bewusst zu werden ist für einen Anfänge ohne Erfahrung extrem schwer. Der Anfänger weiß nicht ob seine Programmierung fehlerhaft ist oder das verfolgte Konzept grundlegend nicht zum Erfolg führen kann.
+
+Nach dem Ausschöpfen aller Ideen wurde die Idee der Zustandsmachine durch eine rein kombinatorische Implementierung der Kontrolllogik ohne jeglichen Zustand (bis auf die Pipeline Register) ersetzt. Diese Implementierung brachte den gewünschten Erfolg und die gewünschte Funktionalität und ist gleichzeitig um ein vielfaches kompakter als die Zustandsmaschine. Der Fehler lag im Verständnis der Aufgabe der Kontrolllogik. Die Kontrolllogik musse die Steuersignale kombinatorisch aufgrund der aktuellen Eingabe produzieren und hat darüberhinaus keinen Zustand.
+
+Liegen die erzeugten Steuersignal einmal vor, werden sie in die PipelineRegister eingezetzt und bewegen sich ab dann parallel zur Instruktion durch die Pipeline bis der Befehl abgearbeitet ist.
+
+### Data Hazards
+
+TODO: Beschreibe die HazardUnit.
+
+
+
+
+Talk about Control Logik and Data Path
 
 # 6. RISC-V Debug Spezifikation und JTAG-DebugProbe on Arduino
 
@@ -271,3 +311,18 @@ Im UPDATE_DR Register wird das Shift-Register in das Datenregister zurück kopie
 
 
 ## RISCV Abstract Commands
+
+Dieser Abschnitt beschreibt die Implementierung der Befehle, mit denen der Speicher gelesen und geschrieben werden kann. 
+
+Die RISC-V Debug Spezifikation gibt an, das es mehrere Möglichkeiten gibt auf den Speicher zuzugreifen. Diese Möglichkeiten werden im Abschnitt B.2.7 Reading Memory aufgelistet. 
+
+Die erste Möglichkeit ist es über den System-Bus direkt auf den Speicher zuzugreifen. Dazu definiert die Debug-Spezifikation eine Menge von Registern im DM. (Diese Register werden über das DTM.dmi Register über Wishbone geschrieben und gelesen.) Um Speicher zu lesen oder zu schreiben wird eine Kombination aus sbcs, sbaddress0 und sbdata0 verwendet. Der Speicherzugriff über den Systembus geht am System der Privilegien im RISC-V CPU vorbei und bietet vollen Zugriff auf den Speicher. Diese erste Option trifft implizit die Annahme, das der Speicher über ein Bussystem mit dem Hart verbunden ist. Das muss nicht immer der Fall sein.
+
+Die zweite Möglichkeit ist es, den Program Buffer zu verwenden. Man lädt eine kleine Menge an RISC-V Maschinen Code in den Program Buffer, dessen Funktion das Lesen oder Schreiben des Speichers ist und führt den Hart auf dem Program Buffer aus, anstelle auf dem Instruction-Memory.
+
+Eine dritte Möglichkeit sind abstrakte Commandos. Abstrakte Commandos werden sollen laut Debug Spezifikation mit den Privilegien des Harts ausgeführt werden, dabei muss aber nicht zwangsweiße der Hart selbst verwendet werden. Theoretisch könnte man diese Funktion also implementieren, indem man ein vorgefertigtes Programm in den Program Buffer lädt und den Hart ausführt. Alternativ sind andere Implememtierungen erlaubt.
+
+In dieser Studienarbeit wird der dritte Ansatz ausgewählt. Dabei wird kein Program Buffer verwendet. Da der simple Hart keine Privilegien implementiert ist das System konform zur Debug Spezifikation, wenn der DM den Speicherzugriff einfach direkt selbst implementiert und ausführt. Es wird einfach direkt auf den Speicher zugegriffen. Dabei wird kein Bus zwischen DM und Speicher verwendet, da der simple RISC-V CPU keinen internen Bus besitzt.
+
+TODO: beschreibe den Verilog-Code für den Speicherzugriff.
+
