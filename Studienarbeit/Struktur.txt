@@ -44,7 +44,15 @@ In dieser Studienarbeit wird ein Teil des Kerns RV32I umgesetzt. Dieser Umfang k
 - Lattice IceStick
 - GOWIN TangNano 9k
 - Digilent  ARTY S7
-- DE 112 
+- DE 112
+
+Kriterien: 
+ - RAM; 
+ - LUTs - Passt ein RISC-V Design auf den FPGA
+ - Formfaktor (passt es auf den Tisch, kann man es leicht in einem Rucksack mitnehmen z.B. zwischen Hochschule und Wohnung)
+ - Wieviel Perihperie hat es (Hat es PMOD, LEDs, Breakout Pins).
+ - Anschaffungskosten
+ - Freie Software
 
 # 2. Auswahl der FPGA-Entwicklungstools
 
@@ -52,9 +60,27 @@ Kriterien zur Bewertung von FPGA Entwicklungstools
 
 - Installationsplattenplatz (100-te GB sind schlecht!)
 - Unterstützung von Simulationstools und Traceviewer on board
-- Geschwindigkeit der Synthese
+- Geschwindigkeit der Synthese (allgemeine Performance des Tools)
 - Fehlererkennung der Synthese (logische Loops werden von Yosys nicht erkannt! Vom professionellen Tool schon)
 - Editorqualität (go to definition, highlight von gehovertem Symbol, ...)
+
+Da diese Studienarbeit Lösungen für den Student in einem der unteren Semester sucht, muss davon ausgegangen werden, dass dieser Student keine High-End Hardware zur Verfügung hat um erste Tests mit Hardwarebeschreibungssprachen zu machen und auch nicht bereit ist oder in der finanziellen Situation ist um sich High-End Hardware zu kaufen. Das wahrscheinlichste Szenario ist, dass die Hardware ein Laptop mittlerer Leistungsklasse mit einem Windows-Betriebssystem ist. Im folgenden werden die Messungen auf einem AMD Ryzen 7 PRO 4750U mit 32GB RAM. Die acht Kerne (16 Threads) haben einen Basistakt von 1,7 GHz und einen Boosttakt von 4,1 GHz. Der Prozessor besitzt 512 KB L1 Cache, 4 MB L2 Cache und 8 MB L3 Cache. Die Messungen werden unter Windows 11 Pro, 24H2 (OS build 26100.4349) ausgeführt. 
+
+# Lattice iCEstick (https://www.latticesemi.com/icestick)
+Der iCEstick der Firma Lattice ist ein FPGA im USB-Stick Format. Damit nimmt er kaum Platz auf dem Schreibtisch ein und kann leicht transportiert weren. Der Anschaffungspreis liegt bei etwa 130-150 Euro. Damit ist der Lattice iCEstick vergleichsweiße teuer. Die Peripherie weißt leider nur wenige Breakout Pins auf, dafür besitzt das Board einen einzigen PMOD Header und 5 LEDs, sowie einen Infrarot IrDA Sensor. Der iCEstick besitzt einen Lattice iCE40HX-1k FPGA chip (https://www.mouser.de/ProductDetail/Lattice/iCE40HX1K-TQ144?qs=F9A14TELRMtiYSwGl6R%2Fcw%3D%3D&srsltid=AfmBOopRdilmfbmh3HyTAYo1qr89NC4w5Ca6M5ykeBUMYd6rbPP2OnCq). Auf dem FPGA hat ein kleiner RISC-V CPU Platz (siehe https://github.com/BrunoLevy/learn-fpga und das FemotRV Projekt). Die offizielle IDE ist iCEcube2 und kann auf Microsoft Windows ausgeführt werden. Der Download von iCEcube2 ist 700MB groß und zur Installtion werden 880MB benötigt. Damit ist das Softwarepacket insgesamt vergleichsweiße klein. Zum Programmieren des Bitstream wird die Diamond Programmer Software verwendet, der den Bitsream in das OnBoard SPI Flash schreibt. Die iCEcube2 Software benötigt einen Lizenz zur Ausführung. Die Lizenz wird auf Anfrage an nicht-kommerzielle Entwickler und Start-Ups ausgegegben. Normalerweiße kostet diese Lizenz Geld. 
+
+Als Alternative zur Software des Herstellers kann die OpenSource Toolchain Yosys (https://github.com/YosysHQ/yosys) verwendet werden. Yosys kann in einer für Windows vorgefertigten Version von https://yosyshq.net/yosys/download.html heruntergeladen werden. Yosys ist ein Sammlung an Kommandozeilentools um Verilog zu Synthetisieren, eine Bitstream zu erzeugen und den Bitstream auf die unterstützten FPGAs zu laden. Vorteile von Yosys sind der schnelle und unkomplizierte Download, der mit 303 MB sehr kompakt ist. Ein weiterer Vorteil ist die relativ schnelle Synthese-Zeit. Die Nachteile von Yosys sind die mangelhafte Erkennung und Ausgabe kritischer Fehler und die fehlende Option IPs einzusetzen. Der Nachteil ohne IP ist, dass ein Speicherblock vom Tool als Speicher erkannt werden muss. Diese Erkennung führt das Tool implizit automatisch aus und der Benutzer muss hoffen, dass sein Design als Speicher erkannt wird. Es gibt Vorgegebene Verilog Designs, die Yosys als Speicher erkennen soll. Nicht immer funktioniert die Erkennung automatisch. Wenn ein Speicher nicht als Speicher IP erkannt wird, wird er Bitstream nicht durch Hardware im FPGA implementiert werden. Wenn diese Situation eintritt, synthetisiert Yosys Speicher durch Logikblöcke und belegt damit direkt große Mengen an Resourcen auf dem FPGA, die dann nicht mehr für echte Logik zur Verfügung stehen! Um die Speicherhardware auf dem IceStick wirklich zu verwenden ist einiges an Erfahrung notwendig, die ein Anfänger wahrscheinlich nicht aufweißen kann. Diese Probleme traten während der Arbeit an dieser Studienarbeit auf und haben sehr viel Zeit gekostet. Letztendlich wurde auf ein anders Board mit anderer IDE umgestiegen.
+
+Fazit zum IceStick mit Yosys: Die Verwendung ist für einen Anfänger zu kompliziert. Da kritische Fehler vom Werkzeug nicht automatisch erkannt werden, tappt ein Anfänger in die Falle Quellcode zu schreiben, der zwar synthetisiert, aber auf dem FPGA dann nicht funktioniert. Das erschwerte Erstellen von Speicher führt dazu, dass ein Anfänger daran scheitert einen RISC-V CPU einfach zu erstellen. Eine detailierte Einarbeitung in Yosys unter Aufsicht eines erfahrenen Mentors würde diese Situation wahrscheinlich entschärfen. Im Selbststudium steht diese Option allerdings nicht zur Wahl. Es wird Anfängern mit einem knappen Zeitrahmen nicht empfohlen mit Yosys zu beginnen.
+
+# GOWIN Tang Nano 9K
+Das Board an sich lässt sich für etwa 25 bis 60 Euro kaufen, je nachdem welches zubehör ausgewählt wird. Das Board ist damit vergleichsweiße günstig. Die IDE lässt sich einfach und kostenfrei herunterladen. Der Download der Education Version ist mit 413 MB vergleichsweiße klein und kann auf Microsoft Windows ausgeführt werden. 
+
+Fazit: Es zeigt sich, dass die Arbeit mit dem GOWIN Tang Nano 9K Board am ehesten der Arbeit mit einem Arduino gleicht. Die IDE ist simpel und erste Verilog Module lassen sich schnell umsetzen und auf das Board laden. Die Synthese erfolgt sehr schnell, was die Wartezeiten gering hält. Dabei erkennt die Synthese viele relvante Fehler und gibt Warnungen und Fehler aus! Die IDE hat eine Bibliothek für IP-Cores, um z.B. einfach Speicher synthetisieren zu lassen. Es gibt einige gut dokumentierte Beispiele auf der Homepage des Produkts. Für einen Anfänger ist dieses Board gut geeignet, da er in der Lernphase sehr viele Fehler machen wird und die unkomplizierte und schnelle Deployment des Board damit einen großen Vorteil darstellt.
+
+
+Fazit:
+Tang Nano 9K wird für schnelle Tests verwendet. Das System wird letzendlich auf dem Arty S7 integriert.
 
 # 3. Erlernen der HDL Verilog
 
@@ -191,3 +217,7 @@ Mit diesen Funktionen kann Maschinen code auf den RISC-V CPU geladen werden und 
 Die JTAG-Debug Probe wird für erste Tests über einen Arduino DUE (3.3 Volt-System) und über Bit-Banging implementert. Python Skripte werden auf dem PC ausgeführt und sprechen mit dem Arduino über ein simples Datenaustauschprotokoll. Der Debugger besteht aus einzelnen Pyhton Skripten.
 
 Um den Hart zu stoppen, hat der DM Kontroller über die Hardware Clock-Source, die den Hart mit einem Taktsignal verorgt. Wenn die Clock-Leitung unterbrochen wird, dann ist der Hart gestoppt. Zum Single-Step Betrieb generiert der DM ein eigenes Clock-Signal und führt dem Hart dieses Clock-Signal zu. Wenn der Hart fortgesetzt wird, dann wird die Hardware Clock-Source wieder zugeführt.
+
+## JTAG State Machine
+
+## RISCV Abstract Commands
