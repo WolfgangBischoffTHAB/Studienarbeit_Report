@@ -6,7 +6,7 @@ Implementierung eines RISC-V CPU mit Teilen aus dem RISC-V External Debug Suppor
 
 # Zielsetzung
 
-Das Ziel dieser Studienarbeit ist es einen einfachen RISC-V CPU zu erstellen. Das Testen des CPU durch selbstentwickelte Software und das Debuggen der Software auf dem CPU ist ebenfalls Teil der gesetzten Aufgabe. Dazu soll nicht nur ein RISC-V CPU entwickelt werden, sondern es sollen auch Tools bereitgestellt werden, mit denen sich die obigen Aufgaben ausführen lassen. Die FPGA Entwicklungswerkzeuge werden vorgestellt, bewertet und schießlich ausgewählt.
+Das Ziel dieser Studienarbeit ist es einen einfachen RISC-V CPU zu erstellen. Das Testen des CPU durch selbstentwickelte Software und das Debuggen der Software auf dem CPU ist ebenfalls Teil der gesetzten Aufgabe. Dazu soll nicht nur ein RISC-V CPU entwickelt werden, sondern es sollen auch Tools bereitgestellt werden, mit denen sich die obigen Aufgaben ausführen lassen. Die FPGA Entwicklungswerkzeuge werden vorgestellt, bewertet und schließlich ausgewählt.
 
 # Herausforderungen
 
@@ -23,12 +23,12 @@ Die Implementierung eines RISC-V CPU stellt einen Student bzw. Anfänger vor meh
 
 Auch nachdem die Aufgabe des Designs eines CPU gemeistert ist, gibt es weitere Herausforderungen.
 
-4. Auswahl eines Assemblers - Es gibt wenige Assembler, die RISC-V code in Maschinenbefehle übersetzen und dabei möglichst wenige Annahmen treffen.
-Das Problem liegt in einer Diskrepanz zwischen der RISC-V Spezifikation und Lehrbüchern zu RISC-V und den Compilern und Assemblern, die tatsächlich zur Erstellung von Software genutzt werden. Die RISC-V Spezifikation und Lehrbücher sprechen über RISC-V Instruktionen und deren Kodierung in Maschinenbefehlen ohne Dabei ein konkretes Betriebssystem als Zielumgebung zu addressieren. Wirkliche Compiler haben die Aufgabe Maschinencode auszugeben, der konkrete Speicherbereiche belegt und die Kombination von unterschiedlichen Objektfiles in ein kombiniertes Programm ermöglicht. Für einen Anfänger kann diese Diskrepanz zu einer zusätzlichen Herausforderung werden, für die er nicht die notwendige Zeit oder Motivation hat. Ein echter Compiler benötigt beispielsweiße noch ein Linkerscript bevor er arbeitet. Das Produkt verwendet spezielle Quellcode abschnitte, die bestimmte Datenstrukturen initialisieren. Wenn man eine RISC-V CPU entwirft, möchte man eventuel lediglich simple Testprogramme von Addresse 0x00 ausführen und legt keinen Wert auf Adressbereiche oder Initialisierung bestimmter Daten. 
--> Die Lösung für dieses Problem wird es sein einen Assembler für 32-bit RISC-V bereitzustellen, mit dem schnell, unkompliziert und ohne Annahmen RISC-V Assemblercode in Maschinenbefehle für den Upload in den CPU übersetzt werden kann. Der Erstellte Maschinen-Code führt das Assembler-Programm dann exakt aus ohne jegliche Änderungen oder Annahmen für ein Zielsystem zu treffen.
+4. Auswahl eines Assemblers - Es gibt wenige Assembler, die RISC-V Code in Maschinenbefehle übersetzen und dabei möglichst wenige Annahmen treffen.
+Das Problem liegt in einer Diskrepanz zwischen der RISC-V Spezifikation und Lehrbüchern zu RISC-V und den Compilern und Assemblern, die tatsächlich zur Erstellung von Software genutzt werden. Die RISC-V Spezifikation und Lehrbücher sprechen über RISC-V Instruktionen und deren Kodierung in Maschinenbefehle ohne dabei ein konkretes Betriebssystem als Zielumgebung zu adressieren. Wirkliche Compiler haben die Aufgabe Maschinencode auszugeben, der konkrete Speicherbereiche belegt und die Kombination von unterschiedlichen Objektdateien in ein kombiniertes Programm ermöglicht. Für einen Anfänger kann diese Diskrepanz zu einer zusätzlichen Herausforderung werden, für die er nicht die notwendige Zeit oder Motivation hat. Ein echter Compiler benötigt beispielsweiße noch ein Linkerscript bevor er arbeitet. Das Produkt verwendet spezielle Quellcode-Abschnitte, die bestimmte Datenstrukturen initialisieren. Wenn man eine RISC-V CPU entwirft, möchte man eventuell lediglich simple Testprogramme von Adresse 0x00 ausführen und legt keinen Wert auf Adressbereiche oder Initialisierung bestimmter Daten. 
+-> Die Lösung für dieses Problem wird es sein einen Assembler für 32-bit RISC-V bereitzustellen, mit dem schnell, unkompliziert und ohne Annahmen RISC-V Assemblercode in Maschinenbefehle für den Upload in den CPU übersetzt werden kann. Der erstellte Maschinen-Code führt das Assembler-Programm dann exakt aus, ohne jegliche Änderungen oder Annahmen für ein Zielsystem zu treffen.
 
-5. Interaktion mit dem CPU - Wenn das Design über den Bitstream auf den FPGA bereitgestellt worden ist, wird der CPU ein Programm ausführen. Die Frage ist, wie man jetzt mit dem CPU interagiert. Diese Thema wird in den Lehrbüchern zu digitalem Design nicht addresiert. Das Ziel ist es nicht Peripherie wie Druckknöpfe, LEDs oder LCDs an den CPU anschließen, sondern mit dem CPU selbst zu kommunizieren. Nach Möglichkeit soll der CPU gestoppt und gestartet werden können. Der Zugriff auf Register und den Speicher soll möglich sein. Dazu gibt es die Debug-Spezifikation für RISC-V (TODO: Referenz auf eine bestimmte Version der Debug-Spezifikation hier einfügen! file:///C:/Users/lapto/dev/fpga/gowin_tang_nano/riscv_debug/doc/riscv-debug-release.pdf). Die Debug-Spezifikation beschreibt Komponenten um mit den Harts eines RISC-V CPU zu interagieren. Im RISC-V Umfeld wird eine Recheneinheit als Hart bezeichnet. Ein Hart führt einen Thread aus. Ein CPU kann beliebig viele Harts enthalten. Die Kommunikation kann über das JTAG-Protokoll ausgeführt werden. 
--> Die Lösung in dieser Studienarbeit wird es sein einen Teil der RISC-V Debug Spezifikation implementiert, gerade genug um die oben geforderten Punkte über eine JTAG DebugProbe auszuführen. Die DebugProbe wird auf einem Arduino DUE ausgeführt, der direkt mit dem FPAG Entwicklungsboard verbunden ist.
+5. Interaktion mit dem CPU - Wenn das Design über den Bitstream auf den FPGA bereitgestellt worden ist, wird der CPU ein Programm ausführen. Die Frage ist, wie man jetzt mit dem CPU interagiert. Diese Thema wird in den Lehrbüchern zu digitalem Design nicht adressiert. Das Ziel ist es nicht Peripherie wie Druckknöpfe, LEDs oder LCDs an den CPU anschließen, sondern mit dem CPU selbst zu kommunizieren. Nach Möglichkeit soll der CPU gestoppt und gestartet werden können. Der Zugriff auf Register und den Speicher soll möglich sein. Dazu gibt es die Debug-Spezifikation für RISC-V (TODO: Referenz auf eine bestimmte Version der Debug-Spezifikation hier einfügen! file:///C:/Users/lapto/dev/fpga/gowin_tang_nano/riscv_debug/doc/riscv-debug-release.pdf). Die Debug-Spezifikation beschreibt Komponenten um mit den Harts eines RISC-V CPU zu interagieren. Im RISC-V Umfeld wird eine Recheneinheit als Hart bezeichnet. Ein Hart führt einen Thread aus. Ein CPU kann beliebig viele Harts enthalten. Die Kommunikation kann über das JTAG-Protokoll ausgeführt werden. 
+-> Die Lösung in dieser Studienarbeit wird es sein einen Teil der RISC-V Debug Spezifikation implementiert, gerade genug um die oben geforderten Punkte über eine JTAG DebugProbe auszuführen. Die DebugProbe wird auf einem Arduino DUE ausgeführt, der direkt mit dem FPGA Entwicklungsboard verbunden ist.
 
 # 0. Einleitung zu RISC-V
 
@@ -55,9 +55,9 @@ Als Optionen für Entwicklungsboards betrachten wir
 Kriterien: 
  - Größe des FPGA - Gewichtungsfaktor(3) - Passt ein RISC-V Design auf den FPGA?
  - Formfaktor - Gewichtungsfaktor(1) - (passt es auf den Tisch, kann man es leicht in einem Rucksack mitnehmen z.B. zwischen Hochschule und Wohnung)
- - Perihperie - Gewichtungsfaktor(3) - Wieviel Perihperie hat es (Hat es PMOD, LEDs, Breakout Pins).
- - Anschaffungskosten - Gewichtungsfaktor(1) - 
- - Freie Software - Gewichtungsfaktor(5) - 
+ - Peripherie - Gewichtungsfaktor(3) - Wieviel Peripherie hat es (PMODs, LEDs, Breakout Pins, ...).
+ - Anschaffungskosten - Gewichtungsfaktor(1) - Sind die Anschaffungskosten für den Anwendungszweck gerechtfertigt. 
+ - Freie Software - Gewichtungsfaktor(5) - Lässt sich der FPGA überhaupt mit Herstellersoftware programmieren
 
 # 2. Auswahl der FPGA-Entwicklungstools
 
@@ -89,15 +89,15 @@ Fazit: Es zeigt sich, dass die Arbeit mit dem GOWIN Tang Nano 9K Board am eheste
 
 Das Arty S7 wird in unterschiedlichen Varianten angeboten. Hier wird die Variante XC7S25-1CSGA324 mit 23360 Logikelementen bewertet. Es handelt sich um die kleinste Ausführung des FPGA. Das Board hat genug Platz für einen simplen RISC-V CPU. Der Preis beläuft sich auf etwa 120 Euro und ist damit vergleichsweiße erschwinglich. Ein Vorteil des Boards ist seine Peripherie. Es werden viele PMOD Ports angeboten, es gibt Switch-Schalter, Push-Buttons und LEDs direkt auf dem Board. Zusätzlich besitzt das Board das Header-Layout eines Arduino. Damit lassen sich Arduino-Shields verwenden, wenn man die Spannungspegel berücksichtigt (Arduino-Systeme sind 5V Systeme während FPGAs normalerweiße weniger Spannung erwarten). Das Board ist nicht sehr groß und in der Verpackung sehr einfach zu transportieren. Strom wird ausschließlich durch die USB-Verbindung bereitgestellt. Das Board wird mit der Vivado IDE verwendet und programmiert. Hier wird auf jeden Fall sehr viel Festplattenspeicher benötigt. Es wird ein zwischenzeitlicher Speicherbedarf von 62,59 GB angegeben mit einen letztendlichen Speicherbedarf von 45,53 GB. Gemessen wurde vor der Installation 355 GB freier Speicher und nach der Installation 305 GB freier Speicher. Damit wurden 50 GB auf der Platte belegt. Im AMD Unified Installer wurde die Option "Vivado" und "Vivado ML Standard" ausgewählt, da es sich bei "Vivado ML Standard" um die kostenfrei Version der Software handelt. Zusätzlich werden die Pakete für die 7-Series ausgewählt, da auf dem Arty S7 ein Spartan 7 FPGA bestückt ist.
 
-Die Vivaso IDE ist im Vergleich zur GOWIN IDE langsamer hat dafür aber einen größeren Funktionsumfang. Sie erkennt bereits bei der Synthese viele Fehler und warnt damit den Benutzer bevor er Zeit verschwendet. Die Auswahl an IP-Blöcken ist sehr umfrangreich und deren Konfiguration wird durch eine Menüführung mit vielen Auswahloptionen unterstüzt. Speicherlassen sich damit sehr einfach erstellen und werden im Design dann durch wirkliche Hardware im FPAG und nicht durch Logikblöcke ausgeführt.
+Die Vivado IDE ist im Vergleich zur GOWIN IDE langsamer hat dafür aber einen größeren Funktionsumfang. Sie erkennt bereits bei der Synthese viele Fehler und warnt damit den Benutzer bevor er Zeit verschwendet. Die Auswahl an IP-Blöcken ist sehr umfrangreich und deren Konfiguration wird durch eine Menüführung mit vielen Auswahloptionen unterstüzt. Speicherlassen sich damit sehr einfach erstellen und werden im Design dann durch wirkliche Hardware im FPGA und nicht durch Logikblöcke ausgeführt.
 
 Vergleichstabelle
 
--- = 0
-- = 1
-0 = 2
-+ = 3
-++ = 4
+-- = 1
+- = 2
+0 = 3
++ = 4
+++ = 5
 
 | Größe des FPGA |
 | -------------- |
